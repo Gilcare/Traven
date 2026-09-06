@@ -129,5 +129,4 @@ def send_whatsapp_message(to: str, text: str):
     print(response.text)
 
     response.raise_for_status()
-```
 
