@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Success — Traven</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f3f4f6; padding: 24px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    .card { background: white; padding: 40px 24px; border-radius: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); max-width: 380px; width: 100%; text-align: center; }
+    .check { font-size: 64px; color: #25d366; margin-bottom: 16px; }
+    h1 { font-size: 22px; color: #111827; margin-bottom: 8px; }
+    p { color: #6b7280; line-height: 1.5; margin-bottom: 8px; font-size: 15px; }
+    .meta { font-size: 13px; color: #9ca3af; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="check">✅</div>
+    <h1>Aidex Connected!</h1>
+    <p>You can close this page and return to WhatsApp.</p>
+    <p class="meta">Your first insight will arrive in 2 minutes.</p>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const code  = params.get('code');
+    const state = params.get('state');
+
+    // Notify backend
+    fetch('/api/oauth/aidex/callback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, state })
+    })
+    .then(r => r.json())
+    .then(data => console.log('Backend synced:', data))
+    .catch(err => console.error('Sync failed:', err));
+
+    // Auto-return to WhatsApp after 3 seconds
+    // Replace 1234567890 with your actual Meta test number (no +, no spaces)
+    setTimeout(() => {
+      window.location.href = 'https://wa.me/1234567890?text=I%20am%20back';
+    }, 3000);
+  </script>
+</body>
+</html>
