@@ -3,12 +3,13 @@ services:
     name: traven-aidex-connect
     runtime: python
     plan: free
+    rootDir: aidex-connect   # <-- ADD THIS LINE
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn aidex-connect.main:app --host 0.0.0.0 --port $PORT
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT  # <-- SIMPLIFIED (because rootDir moves us inside the folder)
     healthCheckPath: /health
     envVars:
       - key: BASE_URL
-        value: https://traven-aidex-connect.onrender.com   # <-- your Render URL (must match AiDEX registration)
+        value: https://traven-aidex-connect.onrender.com
       - key: AIDEX_BASE_URL
         value: https://aidexapi.microtechmd.com
       - key: MONGO_DB
@@ -18,10 +19,11 @@ services:
       - key: AIDEX_CLIENT_SECRET
         sync: false
       - key: MONGO_URI
-        sync: false       # mongodb+srv://<user>:<pass>@<cluster>.mongodb.net
+        sync: false
       - key: TOKEN_KEY
-        sync: false       # python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+        sync: false
       - key: TRAVEN_WEBHOOK_URL
-        sync: false       # optional
+        sync: false
       - key: INTERNAL_API_KEY
-        sync: false       # if unset, a random one is generated at boot (check logs)
+        sync: false
+
