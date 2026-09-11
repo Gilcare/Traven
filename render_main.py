@@ -17,6 +17,30 @@ PHONE_NUMBER_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID")
 GRAPH_API_URL = f"https://graph.facebook.com/v23.0/{PHONE_NUMBER_ID}/messages"
 
 
+
+# 1. Grab the secret key from the environment variables
+INTERNAL_API_KEY = os.environ.get("INTERNAL_API_KEY")
+
+# 2. Add the secure endpoint that listens for AiDEX events
+@app.post("/aidex-events")
+async def aidex_events(request: Request):
+    # Security check: Make sure the incoming request has the matching key
+    if request.headers.get("X-API-Key") != INTERNAL_API_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+        
+    payload = await request.json()
+    
+    # Trigger the instant WhatsApp confirmation when a user connects
+    if payload.get("event") == "aidex_connected":
+        wa_id = payload.get("wa_id")
+        
+        # TODO: Add your existing WhatsApp helper function below to message the user.
+        # Example: send_whatsapp_message(wa_id, "✅ Your AiDEX account is successfully connected!")
+        
+    return {"ok": True}
+
+
+
 # ─────────────────────────────────────────────
 # Health check
 # ─────────────────────────────────────────────
