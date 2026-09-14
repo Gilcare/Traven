@@ -27,6 +27,7 @@ from datetime import datetime, timedelta, timezone
 import httpx
 from fastapi import FastAPI, Request, HTTPException, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
+from aidex_connect.routes import router as aidex_router 
 from cryptography.fernet import Fernet
 from pymongo import MongoClient, ASCENDING
 
@@ -148,6 +149,8 @@ async def notify_traven(wa_id: str, event: str, extra: dict | None = None):
     except Exception:
         pass  # never break the OAuth flow over a webhook hiccup
 
+app.include_router(aidex_router)
+
 # ------------------------------------------------------------------ routes
 @app.get("/health")
 def health():
@@ -163,6 +166,12 @@ def connect(wa_id: str):
     url = (f"{AIDEX_AUTH_URL}?clientId={CLIENT_ID}"
            f"&responseType=code&state={state}")
     return RedirectResponse(url)
+
+
+@app.get("/")
+def read_root():
+    return {"message": "Travenhealth Server Operational"}
+
 
 @app.get("/callback")
 async def callback(code: str | None = None, state: str | None = None,
