@@ -26,7 +26,7 @@ from datetime import datetime, timedelta, timezone
 
 import httpx
 from fastapi import FastAPI, Request, HTTPException, Query
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, PlainTextResponse
 from aidex_connect.routes import router as aidex_router 
 from cryptography.fernet import Fernet
 from pymongo import MongoClient, ASCENDING
