@@ -40,7 +40,7 @@ AIDEX_GLUCOSE_URL = f"{AIDEX_BASE_URL}/v1/user/sensor-glucose"
 CLIENT_ID     = os.environ["AIDEX_CLIENT_ID"]
 CLIENT_SECRET = os.environ["AIDEX_CLIENT_SECRET"]
 
-BASE_URL     = os.environ.get("BASE_URL", "http://localhost:8000")
+BASE_URL     = os.environ.get("BASE_URL", "https://aidex-connect.onrender.com")
 REDIRECT_URI = f"{BASE_URL}/callback"          # <-- register EXACTLY this in AiDEX portal
 
 MONGO_URI = os.environ["MONGO_URI"]            # e.g. mongodb+srv://user:pass@cluster0.x.mongodb.net/traven
