@@ -48,6 +48,7 @@ DB_NAME   = os.environ.get("MONGO_DB", "traven")
 
 TRAVEN_WEBHOOK_URL = os.environ.get("TRAVEN_WEBHOOK_URL", "")
 INTERNAL_API_KEY   = os.environ.get("INTERNAL_API_KEY", secrets.token_hex(16))
+VERIFY_TOKEN = os.getenv("WHATSAPP_VERIFY_TOKEN")
 
 _token_key = os.environ.get("TOKEN_KEY", "")
 FERNET = Fernet(_token_key.encode() if _token_key else Fernet.generate_key())
@@ -168,9 +169,31 @@ def connect(wa_id: str):
     return RedirectResponse(url)
 
 
+# --- ROOT REASSURANCE PATH ---
 @app.get("/")
 def read_root():
-    return {"message": "Travenhealth Server Operational"}
+    return {"message": "Travenhealth WhatsApp Webhook Handler Operational"}
+
+# --- 1. META WEBHOOK VERIFICATION (Runs once when you setup the dashboard) ---
+@app.get("/webhook", response_class=PlainTextResponse)
+def verify_meta_webhook(
+    mode: str = Query(None, alias="hub.mode"),
+    token: str = Query(None, alias="hub.verify_token"),
+    challenge: str = Query(None, alias="hub.challenge")
+):
+    if mode == "subscribe" and token == VERIFY_TOKEN:
+        print("WEBHOOK_VERIFIED: Meta connected successfully!")
+        return challenge
+    else:
+        raise HTTPException(status_code=403, detail="Verification token mismatch")
+
+# --- 2. LIVE WEBHOOK LISTENER (Runs every time a user texts your number) ---
+@app.post("/webhook")
+async def whatsapp_webhook(payload: dict):
+    # This is where we will capture the user's "Hi" message and send the template!
+    print("Incoming WhatsApp Payload Received:", payload)
+    return {"status": "success"}
+
 
 
 @app.get("/callback")
