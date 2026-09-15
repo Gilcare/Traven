@@ -68,59 +68,58 @@ async def verify_webhook(request: Request):
     raise HTTPException(status_code=403, detail="Verification failed")
 
 
-# ─────────────────────────────────────────────
-# Receive WhatsApp messages
-# ─────────────────────────────────────────────
 
 # ─────────────────────────────────────────────
-# Receive WhatsApp messages (Diagnostic Version)
+# Receive WhatsApp messages (Clean Production)
 # ─────────────────────────────────────────────
 
 @app.post("/webhook")
 async def receive_webhook(request: Request):
-    # FORCE LOGGING: Print to standard output instantly before any parsing
-    print("!!! WEBHOOK INSTANTLY TRIGGERED !!!", flush=True)
-    
-    # Capture the raw text body to prevent silent framework errors
-    body_bytes = await request.body()
-    body_text = body_bytes.decode("utf-8")
-    print(f"RAW BODY RECEIVED: {body_text}", flush=True)
-
     try:
         data = await request.json()
-        entry = data["entry"][0]
-        changes = entry["changes"][0]
-        value = changes["value"]
-
+        
+        # Safely pull out entries
+        entry = data.get("entry", [{}])[0]
+        changes = entry.get("changes", [{}])[0]
+        value = changes.get("value", {})
+        
+        # Log status updates silently, keep the log terminal clean
+        if "statuses" in value:
+            return {"status": "status_update_acknowledged"}
+            
         messages = value.get("messages")
-
         if not messages:
-            print("Status: Ignored (Not a message event)", flush=True)
-            return {"status": "ignored"}
-
+            return {"status": "ignored_non_message_event"}
+            
         message = messages[0]
-        sender = message["from"]
-        message_type = message["type"]
-
-        if message_type != "text":
-            print(f"Status: Ignored (Message type is {message_type})", flush=True)
-            return {"status": "ignored", "reason": "not a text message"}
-
-        text = message["text"]["body"]
-        print(f"Parsed Message from {sender}: {text}", flush=True)
-
-        # Send response back
-        reply = f"You said: {text}"
-        send_whatsapp_message(sender, reply)
+        sender = message.get("from")
+        
+        # Route inbound workflows
+        if message.get("type") == "text":
+            text = message["text"]["body"]
+            print(f"📥 Message from {sender}: '{text}'", flush=True)
+            
+            # Dynamic onboarding payload for ://cgm.com
+            onboarding_url = f"https://://cgm.com/auth?whatsapp_id={sender}"
+            
+            reply = (
+                f"Welcome to Travenhealth! 👋\n\n"
+                f"To complete your setup, please securely connect your AiDEX CGM account via this link:\n"
+                f"{onboarding_url}"
+            )
+            
+            # Fire response via outbox channel
+            send_whatsapp_message(sender, reply)
+            print(f"📤 Sent onboarding link to {sender}.", flush=True)
 
     except Exception as e:
-        # Catch absolutely every parsing error so the request returns a 200 to Meta
-        print(f"!!! CRITICAL PARSING ERROR !!!: {str(e)}", flush=True)
+        print(f"⚠️ Webhook processing warning: {str(e)}", flush=True)
 
-    # Always return a 200 OK so Meta doesn't pause your webhook
+    # Always exit 200 OK so Meta leaves the pipeline active
     return {"status": "ok"}
 
-        
+
+
 
 # ─────────────────────────────────────────────
 # Send WhatsApp message
