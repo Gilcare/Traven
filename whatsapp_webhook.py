@@ -72,55 +72,55 @@ async def verify_webhook(request: Request):
 # Receive WhatsApp messages
 # ─────────────────────────────────────────────
 
+# ─────────────────────────────────────────────
+# Receive WhatsApp messages (Diagnostic Version)
+# ─────────────────────────────────────────────
+
 @app.post("/webhook")
 async def receive_webhook(request: Request):
-    data = await request.json()
-
-    print("Incoming webhook:")
-    print(data)
+    # FORCE LOGGING: Print to standard output instantly before any parsing
+    print("!!! WEBHOOK INSTANTLY TRIGGERED !!!", flush=True)
+    
+    # Capture the raw text body to prevent silent framework errors
+    body_bytes = await request.body()
+    body_text = body_bytes.decode("utf-8")
+    print(f"RAW BODY RECEIVED: {body_text}", flush=True)
 
     try:
+        data = await request.json()
         entry = data["entry"][0]
         changes = entry["changes"][0]
         value = changes["value"]
 
         messages = value.get("messages")
 
-        # Ignore webhook events that aren't messages
         if not messages:
+            print("Status: Ignored (Not a message event)", flush=True)
             return {"status": "ignored"}
 
         message = messages[0]
-
         sender = message["from"]
         message_type = message["type"]
 
-        # For the PoC, we're only handling text messages
         if message_type != "text":
+            print(f"Status: Ignored (Message type is {message_type})", flush=True)
             return {"status": "ignored", "reason": "not a text message"}
 
         text = message["text"]["body"]
+        print(f"Parsed Message from {sender}: {text}", flush=True)
 
-        print(f"Message from {sender}: {text}")
-
-        # ─────────────────────────────────────
-        # Your idea/business logic goes here
-        # ─────────────────────────────────────
-
+        # Send response back
         reply = f"You said: {text}"
-
-        # ─────────────────────────────────────
-        # Send WhatsApp reply
-        # ─────────────────────────────────────
-
         send_whatsapp_message(sender, reply)
 
-    except (KeyError, IndexError, TypeError) as e:
-        print(f"Could not parse webhook: {e}")
+    except Exception as e:
+        # Catch absolutely every parsing error so the request returns a 200 to Meta
+        print(f"!!! CRITICAL PARSING ERROR !!!: {str(e)}", flush=True)
 
-    # Meta expects a successful response
+    # Always return a 200 OK so Meta doesn't pause your webhook
     return {"status": "ok"}
 
+        
 
 # ─────────────────────────────────────────────
 # Send WhatsApp message
