@@ -54,39 +54,49 @@ st.markdown("---")
 # Visual placeholder where your upcoming sensor charts will go
 st.info("📊 *Glucose Sync Active:* Real-time data visualization layout module loading below...")
 
-# Core conversational chat interface state initializations
+# Initialize Chat Interface
 if "messages" not in st.session_state:
-    st.session_state.messages = [
-        {"role": "assistant", "content": "Hello! I am your Travenhealth assistant. Ask me anything about your current glucose metrics, diet adjustments, or metabolic insights!"}
+            st.session_state.messages = [{"role": "assistant", "content": "Hello! I am your Travenhealth assistant. Ask me anything about your current glucose metrics, diet adjustments, or metabolic insights!"}
     ]
 
-# Display historical chat log history across screen refreshes
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.write(msg["content"])
+# Display historical chat logs
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-# Process incoming input chat query strings from the patient
-if user_prompt := st.chat_input("Ask Traven a question about your health data..."):
-    # Append user prompt to dashboard canvas screen display
-    st.session_state.messages.append({"role": "user", "content": user_prompt})
+
+# Process incoming input chat query from user
+if prompt := st.chat_input("✨ Ask Traven a question..."):
+    user_input = prompt.text
+    st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
-        st.write(user_prompt)
+        st.markdown(user_input)
+        # Optional: Handle uploaded files if any...future feature
+        #if prompt.files:
+        #st.caption(f"📎 {len(prompt.files)} file(s) uploaded")
+
+
+    with st.chat_message("assistant",avatar = "🌊"):
+        # Setup for streaming
+        streamer = TextIteratorStreamer(pipe.tokenizer, skip_prompt=True, skip_special_tokens=True)
         
-    # Generate intelligent metabolic responses completely free of Meta transaction fees
-    with st.chat_message("assistant"):
-        with st.spinner("Analyzing metrics..."):
-            
-            # Context window reinforcement payload architecture
-            context_prompt = (
-                f"You are the senior metabolic health tracker AI for Travenhealth. "
-                f"You are speaking with patient account {user_whatsapp_id}. Provide highly scientific, actionable, "
-                f"yet easy-to-understand lifestyle guidance based on their metrics."
+        # Prepare arguments
+        messages = st.session_state.messages # Use full history for context
+        generation_kwargs = dict(
+            text_inputs=messages, 
+            streamer=streamer,
+            max_new_tokens=512,
+            do_sample=True,
+            temperature=0.7,
+            top_p=0.9
             )
-            
-            response = ai_client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=[context_prompt, user_prompt]
-            )
-            
-            st.write(response.text)
-            st.session_state.messages.append({"role": "assistant", "content": response.text})
+
+        # Run generation in a background thread to prevent UI blocking
+        thread = Thread(target=pipe, kwargs=generation_kwargs)
+        thread.start()
+
+        # Display the stream
+        full_response = st.write_stream(streamer)
+
+        st.session_state.messages.append({"role": "assistant", "content": full_response})
+
