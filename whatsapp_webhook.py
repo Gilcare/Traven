@@ -17,7 +17,7 @@ GRAPH_API_URL = f"https://graph.facebook.com/v23.0/{PHONE_NUMBER_ID}/messages"
 
 # Grab the secret keys and endpoints from environment variables
 INTERNAL_API_KEY = os.environ.get("INTERNAL_API_KEY")
-AIDEX_CONNECT_BACKEND_URL = os.environ.get("AIDEX_CONNECT_BACKEND_URL", "https://onrender.com")
+AIDEX_CONNECT_BACKEND_URL = os.environ.get("AIDEX_CONNECT_BACKEND_URL", "https://aidex-connect.onrender.com")
 
 
 # 1. Secure endpoint that listens for internal AiDEX backend login notifications
