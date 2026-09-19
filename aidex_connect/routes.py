@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from datetime import datetime, timedelta, timezone
 
 # Import the existing DB instance and encryption tool from your main file
-from main import users_col, FERNET
+from aidex_connect.main import users_col, FERNET
 
 # Create a router specifically for the Aidex connection endpoints
 # Note: folder name updated to "aidex_connect" to match your GitHub directory
