@@ -3,6 +3,7 @@ import requests
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import PlainTextResponse
+from aidex_connect.database_logic import fetch_stored_token
 
 app = FastAPI()
 
