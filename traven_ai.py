@@ -3,7 +3,7 @@ import os
 from pymongo import MongoClient
 from google import genai
 
-st.set_page_config(page_title="Traven AI", page_icon="🌊", layout="centered")
+st.set_page_config(page_title="TravenHealth", page_icon="🌊", layout="centered")
 
 # 1. Establish Database Connection (Shares the exact same data cluster)
 MONGO_URI = os.environ.get("MONGO_URI", "your_mongodb_uri")
@@ -32,6 +32,18 @@ if not user_profile:
     st.warning("⚠️ Your account connection profile is incomplete. Please type 'Hi' on WhatsApp to finish onboarding.")
     st.stop()
 
+
+
+@st.cache_resource
+def load_pipeline():
+    # Adding torch_dtype="auto" or "float16" speeds up GPU inference
+    return pipeline("text-generation", model="Qwen/Qwen2.5-0.5B-Instruct", dtype=torch.float16)
+pipe = load_pipeline()
+
+
+
+
+
 # ─────────────────────────────────────────────────────────────
 # STREAMLIT UI DESIGN & INTERACTIVE HEALTH CHAT
 # ─────────────────────────────────────────────────────────────
@@ -54,7 +66,7 @@ for msg in st.session_state.messages:
         st.write(msg["content"])
 
 # Process incoming input chat query strings from the patient
-if user_prompt := st.chat_input("Ask a question about your health data..."):
+if user_prompt := st.chat_input("Ask Traven a question about your health data..."):
     # Append user prompt to dashboard canvas screen display
     st.session_state.messages.append({"role": "user", "content": user_prompt})
     with st.chat_message("user"):
