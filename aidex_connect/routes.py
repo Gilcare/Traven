@@ -6,11 +6,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from datetime import datetime, timedelta, timezone
 
-# Import the existing DB instance and encryption tool from your main file
-from aidex_connect.main import users_col, FERNET
-
 # Create a router specifically for the Aidex connection endpoints
-# Note: folder name updated to "aidex_connect" to match your GitHub directory
 router = APIRouter(prefix="/aidex")
 templates = Jinja2Templates(directory="aidex_connect")
 
@@ -38,7 +34,7 @@ async def aidex_callback(code: str, state: str):
 
 
 # ─────────────────────────────────────────────────────────────
-# 2. NEW AIDEX HEADLESS API BRIDGE ROUTES (With Database Logic)
+# 2. NEW AIDEX HEADLESS API BRIDGE ROUTES 
 # ─────────────────────────────────────────────────────────────
 
 @router.post("/request-otp")
@@ -57,7 +53,7 @@ async def trigger_aidex_otp(payload: TriggerOTPRequest):
 
 
 @router.post("/verify-otp")
-async def verify_aidex_otp(payload: VerifyOTPRequest):
+async def verify_aidex_otp(payload: VerifyOTPRequest, request: Request):
     try:
         response = requests.post(
             f"{AIDEX_BASE_URL}/auth/login-by-code",
@@ -73,14 +69,18 @@ async def verify_aidex_otp(payload: VerifyOTPRequest):
         if not access_token:
             return {"success": False, "message": "Authentication succeeded but no token returned"}
 
-        # Calculate expiration window (Default to 24 hours if not provided by direct login API)
+        # Dynamic injection: safely pull the DB instances directly from the running app state
+        users_col = request.app.state.users_col
+        fernet = request.app.state.fernet
+
+        # Calculate expiration window 
         expires_in_seconds = int(auth_data.get("expiresIn", 86400))
         expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in_seconds)
 
-        # Encrypt the token using the existing Fernet system key from main.py
-        encrypted_token = FERNET.encrypt(access_token.encode()).decode()
+        # Encrypt the token using the system key
+        encrypted_token = fernet.encrypt(access_token.encode()).decode()
 
-        # Securely upsert the user record matching your main data schema
+        # Securely upsert the user record
         users_col.update_one(
             {"wa_id": payload.whatsapp_id},
             {"$set": {
