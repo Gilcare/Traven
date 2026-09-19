@@ -6,8 +6,12 @@ from pymongo import MongoClient
 st.set_page_config(page_title="TravenHealth", page_icon="🌊", layout="centered")
 
 # 1. Establish Database Connection (Shares the exact same data cluster)
-MONGO_URI = os.environ.get("MONGO_URI", "your_mongodb_uri")
-DB_NAME = os.environ.get("MONGO_DB", "traven")
+#MONGO_URI = os.environ.get("MONGO_URI", "your_mongodb_uri")
+#DB_NAME = os.environ.get("MONGO_DB", "traven")
+
+
+#MongoDB access
+db_access = st.secrets.mongo_db_key
 
 @st.cache_resource
 def get_db_collection():
