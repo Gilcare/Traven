@@ -56,6 +56,16 @@ FERNET = Fernet(_token_key.encode() if _token_key else Fernet.generate_key())
 
 STATE_TTL_MINUTES = 10
 
+# ------------------------------------------------------------------ storage (MongoDB)
+mongo = MongoClient(MONGO_URI, tls=True, tlsAllowInvalidCertificates=True)
+db = mongo[DB_NAME]
+states_col = db["oauth_states"]
+users_col  = db["users"]
+
+states_col.create_index([("expires_at", ASCENDING)], expireAfterSeconds=0)  # TTL cleanup
+users_col.create_index("wa_id", unique=True)
+
+
 app = FastAPI(title="Traven AiDEX Connect (PoC)")
 
 
@@ -66,14 +76,6 @@ app.state.fernet = FERNET
 # Keep this line where it is
 app.include_router(aidex_router)
 
-# ------------------------------------------------------------------ storage (MongoDB)
-mongo = MongoClient(MONGO_URI, tls=True, tlsAllowInvalidCertificates=True)
-db = mongo[DB_NAME]
-states_col = db["oauth_states"]
-users_col  = db["users"]
-
-states_col.create_index([("expires_at", ASCENDING)], expireAfterSeconds=0)  # TTL cleanup
-users_col.create_index("wa_id", unique=True)
 
 # ------------------------------------------------------------------ helpers
 def now() -> datetime:
