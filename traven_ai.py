@@ -15,7 +15,7 @@ def get_db_collection():
     return client[DB_NAME]["users"]
 
 users_col = get_db_collection()
-ai_client = genai.Client()
+
 
 # 2. Extract the WhatsApp ID directly out of the browser URL bar parameters
 query_params = st.query_params
