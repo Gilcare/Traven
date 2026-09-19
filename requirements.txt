@@ -5,3 +5,8 @@ httpx
 cryptography
 pymongo
 jinja2
+streamlit>=1.35.0
+pymongo>=4.0.0
+torch>=2.0.0
+transformers>=4.40.0
+accelerate>=0.26.0
