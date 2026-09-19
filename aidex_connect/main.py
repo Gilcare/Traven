@@ -58,6 +58,14 @@ STATE_TTL_MINUTES = 10
 
 app = FastAPI(title="Traven AiDEX Connect (PoC)")
 
+
+app.state.users_col = users_col
+app.state.fernet = FERNET
+# ────────────────────────────────────
+
+# Keep this line where it is
+app.include_router(aidex_router)
+
 # ------------------------------------------------------------------ storage (MongoDB)
 mongo = MongoClient(MONGO_URI, tls=True, tlsAllowInvalidCertificates=True)
 db = mongo[DB_NAME]
