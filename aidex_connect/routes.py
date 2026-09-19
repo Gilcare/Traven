@@ -4,17 +4,18 @@ from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
+from datetime import datetime, timedelta, timezone
 
-# Router specifically for the Aidex connection endpoints
+# Import the existing DB instance and encryption tool from your main file
+from main import users_col, FERNET
+
+# Create a router specifically for the Aidex connection endpoints
+# Note: folder name updated to "aidex_connect" to match your GitHub directory
 router = APIRouter(prefix="/aidex")
-
-# Point Jinja2 to look directly inside aidex-connect directory for the HTML file
 templates = Jinja2Templates(directory="aidex_connect")
 
-# Base URL for the external AiDEX system API
 AIDEX_BASE_URL = "https://microtechmd.com"
 
-# Data models to process JSON payloads sent by your system
 class TriggerOTPRequest(BaseModel):
     phone_number: str
 
@@ -27,25 +28,19 @@ class VerifyOTPRequest(BaseModel):
 # 1. YOUR EXISTING FRONTEND & CALLBACK ROUTES
 # ─────────────────────────────────────────────────────────────
 
-# This creates the frontend webpage route: https://onrender.com{user_token}
 @router.get("/connect/{user_token}", response_class=HTMLResponse)
 async def serve_connect_page(request: Request, user_token: str):
-    # Pass the user's phone token to the HTML template so the blue button can use it
     return templates.TemplateResponse("connect.html", {"request": request, "user_token": user_token})
 
-# This creates your final landing/handshake route: https://onrender.com
 @router.get("/callback")
 async def aidex_callback(code: str, state: str):
-    # 'state' contains the user_token you passed earlier.
-    # 'code' is what you will swap for an access token to read their CGM metrics.
     return {"status": "Successfully connected your CGM to Travenhealth! You can close this screen."}
 
 
 # ─────────────────────────────────────────────────────────────
-# 2. NEW AIDEX HEADLESS API BRIDGE ROUTES
+# 2. NEW AIDEX HEADLESS API BRIDGE ROUTES (With Database Logic)
 # ─────────────────────────────────────────────────────────────
 
-# Step A: Mimic the official app request to trigger a real network SMS verification code
 @router.post("/request-otp")
 async def trigger_aidex_otp(payload: TriggerOTPRequest):
     try:
@@ -60,7 +55,7 @@ async def trigger_aidex_otp(payload: TriggerOTPRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Step B: Intercept the code the user received and exchanges it for a persistent token
+
 @router.post("/verify-otp")
 async def verify_aidex_otp(payload: VerifyOTPRequest):
     try:
@@ -75,12 +70,31 @@ async def verify_aidex_otp(payload: VerifyOTPRequest):
         auth_data = response.json()
         access_token = auth_data.get("token")
         
-        # TODO: Save the mapping of payload.whatsapp_id -> access_token in your database
-        # save_token_to_db(payload.whatsapp_id, access_token)
+        if not access_token:
+            return {"success": False, "message": "Authentication succeeded but no token returned"}
+
+        # Calculate expiration window (Default to 24 hours if not provided by direct login API)
+        expires_in_seconds = int(auth_data.get("expiresIn", 86400))
+        expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in_seconds)
+
+        # Encrypt the token using the existing Fernet system key from main.py
+        encrypted_token = FERNET.encrypt(access_token.encode()).decode()
+
+        # Securely upsert the user record matching your main data schema
+        users_col.update_one(
+            {"wa_id": payload.whatsapp_id},
+            {"$set": {
+                "access_token_enc":  encrypted_token,
+                "token_expires_at":  expires_at,
+                "connected_phone":   payload.phone_number,
+                "updated_at":        datetime.now(timezone.utc)
+            }},
+            upsert=True,
+        )
         
         return {
             "success": True, 
-            "message": "Account securely authorized",
+            "message": "Account securely authorized and saved to database",
             "connected_account": payload.phone_number
         }
     except Exception as e:
