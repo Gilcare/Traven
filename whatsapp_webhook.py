@@ -110,7 +110,7 @@ async def receive_webhook(request: Request):
                     send_whatsapp_message(sender, reply)
                 else:
                     send_whatsapp_message(sender, "Welcome to Travenhealth! 👋🏼")
-                    send_whatsapp_approved_template(sender, template_name="your_approved_template_name")
+                    send_whatsapp_approved_template(sender, template_name="connect_aidex_cgm")
             
             # PATHWAY 3: Conversational Offloading to Streamlit (Qwen Cloud Engine)
             else:
