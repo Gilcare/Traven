@@ -14,7 +14,8 @@ app = FastAPI()
 VERIFY_TOKEN = os.getenv("WHATSAPP_VERIFY_TOKEN")
 ACCESS_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN")
 PHONE_NUMBER_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID")
-GRAPH_API_URL = f"https://graph.facebook.com/v23.0/{PHONE_NUMBER_ID}/messages"
+#GRAPH_API_URL = f"https://graph.facebook.com/v23.0/{PHONE_NUMBER_ID}/messages"
+GRAPH_API_URL = f"https://graph.facebook.com/v25.0/1322440827617778/messages"
 
 
 INTERNAL_API_KEY = os.environ.get("INTERNAL_API_KEY")
@@ -196,7 +197,7 @@ def send_whatsapp_approved_template(to: str, template_name: str):
         "type": "template",
         "template": {
             "name": template_name, 
-            "language": {"code": "en_GB"} # If your template is non-English, change code here!
+            "language": {"code": "en_US"} # If your template is non-English, change code here!
         }
     }
     
