@@ -163,6 +163,28 @@ async def receive_webhook(request: Request):
 
     return {"status": "ok"}
 
+
+
+
+def send_whatsapp_message(to: str, text: str):
+    headers = {"Authorization": f"Bearer {ACCESS_TOKEN}", "Content-Type": "application/json"}
+    payload = {"messaging_product": "whatsapp", "to": to, "type": "text", "text": {"body": text}}
+    response = requests.post(GRAPH_API_URL, json=payload, headers=headers, timeout=10)
+    response.raise_for_status()
+
+def send_whatsapp_approved_template(to: str, template_name: str):
+    headers = {"Authorization": f"Bearer {ACCESS_TOKEN}", "Content-Type": "application/json"}
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": to,
+        "type": "template",
+        "template": {"name": template_name, "language": {"code": "en_US"}}
+    }
+    response = requests.post(GRAPH_API_URL, json=payload, headers=headers, timeout=10)
+    response.raise_for_status()
+
+
+
 # ─────────────────────────────────────────────────────────────
 # OUTBOX CHANNELS (WhatsApp Utilities)
 # ─────────────────────────────────────────────────────────────
