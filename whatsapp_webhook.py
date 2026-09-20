@@ -152,11 +152,40 @@ async def receive_webhook(request: Request):
 # ─────────────────────────────────────────────────────────────
 # OUTBOX CHANNELS (WhatsApp Utilities)
 # ─────────────────────────────────────────────────────────────
+#def send_whatsapp_message(to: str, text: str):
+#    headers = {"Authorization": f"Bearer {ACCESS_TOKEN}", "Content-Type": "application/json"}
+#    payload = {"messaging_product": "whatsapp", "to": to, "type": "text", "text": {"body": text}}
+#    response = requests.post(GRAPH_API_URL, json=payload, headers=headers, timeout=10)
+#    response.raise_for_status()
+
+#def send_whatsapp_approved_template(to: str, template_name: str):
+#    headers = {"Authorization": f"Bearer {ACCESS_TOKEN}", "Content-Type": "application/json"}
+#    payload = {
+#        "messaging_product": "whatsapp",
+#        "to": to,
+#        "type": "template",
+#        "template": {"name": template_name, "language": {"code": "en_US"}}
+#    }
+#    response = requests.post(GRAPH_API_URL, json=payload, headers=headers, timeout=10)
+#    response.raise_for_status()
+
+
+
+
+# ─────────────────────────────────────────────────────────────
+# UPDATED OUTBOX CHANNELS (With Live Error Tracing)
+# ─────────────────────────────────────────────────────────────
+
 def send_whatsapp_message(to: str, text: str):
     headers = {"Authorization": f"Bearer {ACCESS_TOKEN}", "Content-Type": "application/json"}
     payload = {"messaging_product": "whatsapp", "to": to, "type": "text", "text": {"body": text}}
+    
     response = requests.post(GRAPH_API_URL, json=payload, headers=headers, timeout=10)
+    
+    # Add this line to print Meta's response to your Render logs!
+    print(f"📡 Meta Plain Text API Response [{response.status_code}]: {response.text}", flush=True)
     response.raise_for_status()
+
 
 def send_whatsapp_approved_template(to: str, template_name: str):
     headers = {"Authorization": f"Bearer {ACCESS_TOKEN}", "Content-Type": "application/json"}
@@ -164,7 +193,15 @@ def send_whatsapp_approved_template(to: str, template_name: str):
         "messaging_product": "whatsapp",
         "to": to,
         "type": "template",
-        "template": {"name": template_name, "language": {"code": "en_US"}}
+        "template": {
+            "name": template_name, 
+            "language": {"code": "en_US"} # If your template is non-English, change code here!
+        }
     }
+    
     response = requests.post(GRAPH_API_URL, json=payload, headers=headers, timeout=10)
+    
+    # Add this line to print Meta's template error details!
+    print(f"📡 Meta Template API Response [{response.status_code}]: {response.text}", flush=True)
     response.raise_for_status()
+
