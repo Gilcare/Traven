@@ -112,8 +112,20 @@ async def receive_webhook(request: Request):
                     reply = "Welcome back to Travenhealth! 👋\nYour AiDEX CGM sync is live. How can I help you check your health metrics today?"
                     send_whatsapp_message(sender, reply)
                 else:
-                    send_whatsapp_message(sender, "Welcome to Travenhealth! 👋🏼")
-                    send_whatsapp_approved_template(sender, template_name="connect_aidex_cgm")
+                    # NEW USER ONBOARDING WORKFLOW (Bypassing Template Mismatch)
+                    print(f"✨ New user {sender} detected. Sending plain text onboarding instructions...", flush=True)
+                    
+                    onboarding_url = f"{AIDEX_CONNECT_BACKEND_URL}/aidex/connect/{sender}"
+                    
+                    reply = (
+                        f"Welcome to Travenhealth! 👋🏼\n\n"
+                        f"Great! To sync your glucose numbers to your phone, please securely pair your AiDEX CGM account via this button link:\n\n"
+                        f"👉 {onboarding_url}"
+                    )
+                    
+                    send_whatsapp_message(sender, reply)
+                    #send_whatsapp_message(sender, "Welcome to Travenhealth! 👋🏼")
+                    #send_whatsapp_approved_template(sender, template_name="connect_aidex_cgm")
             
             # PATHWAY 3: Conversational Offloading to Streamlit (Qwen Cloud Engine)
             else:
@@ -154,31 +166,3 @@ async def receive_webhook(request: Request):
 # ─────────────────────────────────────────────────────────────
 # OUTBOX CHANNELS (WhatsApp Utilities)
 # ─────────────────────────────────────────────────────────────
-#def send_whatsapp_message(to: str, text: str):
-#    headers = {"Authorization": f"Bearer {ACCESS_TOKEN}", "Content-Type": "application/json"}
-#    payload = {"messaging_product": "whatsapp", "to": to, "type": "text", "text": {"body": text}}
-#    response = requests.post(GRAPH_API_URL, json=payload, headers=headers, timeout=10)
-#    response.raise_for_status()
-
-#def send_whatsapp_approved_template(to: str, template_name: str):
-#    headers = {"Authorization": f"Bearer {ACCESS_TOKEN}", "Content-Type": "application/json"}
-#    payload = {
-#        "messaging_product": "whatsapp",
-#        "to": to,
-#        "type": "template",
-#        "template": {"name": template_name, "language": {"code": "en_US"}}
-#    }
-#    response = requests.post(GRAPH_API_URL, json=payload, headers=headers, timeout=10)
-#    response.raise_for_status()
-
-
-
-
-e is non-English, change code here!
-        }
-    }
-    
-    response = requests.post(GRAPH_API_URL, json=payload, headers=headers, timeout=10)
-    
-    
-
