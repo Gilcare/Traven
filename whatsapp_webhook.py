@@ -13,13 +13,11 @@ app = FastAPI()
 # ─────────────────────────────────────────────────────────────
 VERIFY_TOKEN = os.getenv("WHATSAPP_VERIFY_TOKEN")
 ACCESS_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN")
-#PHONE_NUMBER_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID")
-#GRAPH_API_URL = f"https://facebook.com{PHONE_NUMBER_ID}/messages"
-
-
-# Alternative 100% Bulletproof approach:
 PHONE_NUMBER_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID")
-GRAPH_API_URL = f"https://facebook.com{PHONE_NUMBER_ID}/messages"
+GRAPH_API_URL = "https://facebook.com"
+
+
+#f"https://graph.facebook.com/v23.0/{PHONE_NUMBER_ID}/messages"
 
 
 INTERNAL_API_KEY = os.environ.get("INTERNAL_API_KEY")
