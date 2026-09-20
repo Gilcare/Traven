@@ -43,6 +43,7 @@ ROUTER_SYSTEM_INSTRUCTION = (
 # META VERIFICATION & SYSTEM HANDSHAKES
 # ─────────────────────────────────────────────────────────────
 @app.get("/")
+@app.head("/")
 async def root():
     return {"status": "ok", "service": "whatsapp-poc"}
 
