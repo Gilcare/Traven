@@ -196,7 +196,7 @@ def send_whatsapp_approved_template(to: str, template_name: str):
         "type": "template",
         "template": {
             "name": template_name, 
-            "language": {"code": "en_US"} # If your template is non-English, change code here!
+            "language": {"code": "en_GB"} # If your template is non-English, change code here!
         }
     }
     
