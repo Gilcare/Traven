@@ -1,101 +1,51 @@
-import os
-import requests
-from fastapi import APIRouter, Request, HTTPException
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
-from datetime import datetime, timedelta, timezone
+from fastapi import APIRouter, Query, HTTPException, status
+from aidex_connect.client import AidexSandboxClient, AidexApiError
+from aidex_connect.database_logic import TokenRepository
 
-# Create a router specifically for the Aidex connection endpoints
-router = APIRouter(prefix="/aidex")
-templates = Jinja2Templates(directory="aidex_connect")
+router = APIRouter(prefix="/v1/oauth2")
 
-AIDEX_BASE_URL = "https://microtechmd.com"
-
-class TriggerOTPRequest(BaseModel):
-    phone_number: str
-
-class VerifyOTPRequest(BaseModel):
-    phone_number: str
-    otp_code: str
-    whatsapp_id: str
-
-# ─────────────────────────────────────────────────────────────
-# 1. YOUR EXISTING FRONTEND & CALLBACK ROUTES
-# ─────────────────────────────────────────────────────────────
-
-@router.get("/connect/{user_token}", response_class=HTMLResponse)
-async def serve_connect_page(request: Request, user_token: str):
-    return templates.TemplateResponse("connect.html", {"request": request, "user_token": user_token})
+# Initialize client using credentials loaded from your runtime configurations
+sandbox_client = AidexSandboxClient(
+    client_id="YOUR_ACTUAL_SANDBOX_CLIENT_ID", 
+    client_secret="YOUR_ACTUAL_SANDBOX_CLIENT_SECRET"
+)
 
 @router.get("/callback")
-async def aidex_callback(code: str, state: str):
-    return {"status": "Successfully connected your CGM to Travenhealth! You can close this screen."}
-
-
-# ─────────────────────────────────────────────────────────────
-# 2. NEW AIDEX HEADLESS API BRIDGE ROUTES 
-# ─────────────────────────────────────────────────────────────
-
-@router.post("/request-otp")
-async def trigger_aidex_otp(payload: TriggerOTPRequest):
+async def process_oauth_callback(
+    code: str = Query(..., description="Authorization code passed by the platform callback engine"),
+    state: str = Query(..., description="The user identity context tracking key")
+):
+    """Intercepts authorization codes and updates credentials inside the user session cache."""
     try:
-        response = requests.post(
-            f"{AIDEX_BASE_URL}/auth/send-code",
-            json={"phone": payload.phone_number, "type": "login"},
-            timeout=10
-        )
-        if response.status_code != 200:
-            raise HTTPException(status_code=400, detail="AiDEX rejected phone number validation")
-        return {"success": True, "message": "OTP successfully requested from network"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/verify-otp")
-async def verify_aidex_otp(payload: VerifyOTPRequest, request: Request):
-    try:
-        response = requests.post(
-            f"{AIDEX_BASE_URL}/auth/login-by-code",
-            json={"phone": payload.phone_number, "code": payload.otp_code},
-            timeout=10
-        )
-        if response.status_code != 200:
-            return {"success": False, "message": "Invalid or expired OTP code"}
-            
-        auth_data = response.json()
-        access_token = auth_data.get("token")
+        # 1. Trigger network verification sequence
+        raw_token_data = sandbox_client.exchange_authorization_code(code=code)
         
-        if not access_token:
-            return {"success": False, "message": "Authentication succeeded but no token returned"}
-
-        # Dynamic injection: safely pull the DB instances directly from the running app state
-        users_col = request.app.state.users_col
-        fernet = request.app.state.fernet
-
-        # Calculate expiration window 
-        expires_in_seconds = int(auth_data.get("expiresIn", 86400))
-        expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in_seconds)
-
-        # Encrypt the token using the system key
-        encrypted_token = fernet.encrypt(access_token.encode()).decode()
-
-        # Securely upsert the user record
-        users_col.update_one(
-            {"wa_id": payload.whatsapp_id},
-            {"$set": {
-                "access_token_enc":  encrypted_token,
-                "token_expires_at":  expires_at,
-                "connected_phone":   payload.phone_number,
-                "updated_at":        datetime.now(timezone.utc)
-            }},
-            upsert=True,
+        # 2. Extract lowerCamelCase configuration data fields safely
+        access_token = raw_token_data["accessToken"]
+        refresh_token = raw_token_data["refreshToken"]
+        expires_in = raw_token_data.get("expiresIn", 86400)
+        
+        # 3. Securely update tokens in our decoupled persistence layer
+        profile = TokenRepository.save_tokens(
+            user_id=state,
+            access_token=access_token,
+            refresh_token=refresh_token,
+            expires_in=int(expires_in)
         )
         
         return {
-            "success": True, 
-            "message": "Account securely authorized and saved to database",
-            "connected_account": payload.phone_number
+            "status": "success",
+            "message": "AiDEX continuous streaming service successfully coupled.",
+            "synchronized_until": profile.expires_at
         }
+        
+    except AidexApiError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"error_code": error.error_code, "msg": error.description}
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Fatal exception handled inside internal processing operations: {str(e)}"
+        )
